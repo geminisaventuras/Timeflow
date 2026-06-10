@@ -2,574 +2,111 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TimeFlow - Planificador Semanal</title>
-    <style>
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-light: #64748b;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --danger: #ef4444;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        
-        body { background-color: var(--bg); color: var(--text); padding-bottom: 80px; }
-
-        /* Header */
-        header {
-            background: var(--card-bg);
-            padding: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        h1 { font-size: 1.5rem; color: var(--primary); font-weight: 800; }
-        
-        .btn-icon {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-light);
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: background 0.2s;
-        }
-        .btn-icon:hover { background: var(--bg); color: var(--primary); }
-
-        /* Container */
-        .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
-
-        /* Week Selector */
-        .week-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            background: var(--card-bg);
-            padding: 0.5rem;
-            border-radius: 12px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .week-nav button {
-            background: var(--bg);
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            color: var(--text);
-        }
-        .current-week { font-weight: 600; color: var(--primary); }
-
-        /* Timeline Grid */
-        .timeline-container {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 1rem;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            overflow-x: auto;
-        }
-
-        .day-column {
-            min-width: 140px;
-            margin-right: 1rem;
-            display: flex;
-            flex-direction: column;
-        }
-        .day-header {
-            text-align: center;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            background: var(--bg);
-            border-radius: 8px;
-            color: var(--primary);
-        }
-
-        .time-slot {
-            height: 60px;
-            border: 1px dashed var(--border);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-light);
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .time-slot:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        .event-block {
-            background: var(--primary);
-            color: white;
-            border-radius: 8px;
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.85rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            cursor: grab;
-            position: relative;
-            overflow: hidden;
-        }
-        .event-block:active { cursor: grabbing; }
-        .event-block .delete-btn {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(255,255,255,0.3);
-            border: none;
-            color: white;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            font-size: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Floating Action Button */
-        .fab {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 60px;
-            height: 60px;
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-            cursor: pointer;
-            border: none;
-            transition: transform 0.2s;
-            z-index: 1000;
-        }
-        .fab:hover { transform: scale(1.1); }
-        .fab.playing { background: var(--danger); animation: pulse 2s infinite; }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            backdrop-filter: blur(2px);
-        }
-        .modal-overlay.active { display: flex; }
-        
-        .modal {
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        .modal h2 { margin-bottom: 1.5rem; color: var(--text); }
-        
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-light); font-size: 0.9rem; }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-        
-        .modal-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        .btn {
-            flex: 1;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: var(--bg); color: var(--text); }
-        .btn:hover { opacity: 0.9; }
-
-        /* Timer Overlay */
-        .timer-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.95);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-            color: white;
-        }
-        .timer-overlay.active { display: flex; }
-        .timer-display { font-size: 6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-        .timer-task { font-size: 1.5rem; margin-bottom: 2rem; opacity: 0.9; }
-        .timer-controls { display: flex; gap: 1rem; }
-        .timer-btn {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-stop { background: var(--danger); color: white; }
-        .btn-close-timer { background: transparent; border: 2px solid rgba(255,255,255,0.3); color: white; }
-
-        /* Categories Legend */
-        .categories-legend {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-            padding: 1rem;
-            background: var(--card-bg);
-            border-radius: 12px;
-        }
-        .cat-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
-        .cat-dot { width: 12px; height: 12px; border-radius: 50%; }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .timeline-container { display: flex; flex-direction: column; }
-            .day-column { min-width: 100%; margin-right: 0; margin-bottom: 1rem; }
-            .time-slot { height: 50px; }
-        }
-    </style>
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>TimeFlow · Premium</title>
+    <meta name="description" content="Tu compañero para gestionar el tiempo con TDAH">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22TimeFlow%20Premium%22%2C%22short_name%22%3A%22TimeFlow%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'20'%20fill%3D'%234f46e5'%2F%3E%3Ctext%20x%3D'50'%20y%3D'68'%20font-size%3D'54'%20fill%3D'white'%20text-anchor%3D'middle'%20font-weight%3D'bold'%3ET%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22100x100%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="app">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">T</div>
+                <div class="logo-text">
+                    <h1>TimeFlow</h1>
+                    <p>Premium</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-notify" class="icon-btn" title="Activar recordatorios" style="display:none;">🔔</button>
+                <button id="btn-dark-mode" class="icon-btn" title="Modo oscuro">🌓</button>
+                <button id="btn-install" class="icon-btn" title="Instalar app" style="display:none;">📲</button>
+                <button id="btn-install-fallback" class="icon-btn" title="Cómo instalar" style="display:none;">📥</button>
+                <div class="live-clock">
+                    <div class="tz">Caracas</div>
+                    <div class="time" id="live-clock">--:--</div>
+                </div>
+            </div>
+        </header>
 
-    <header>
-        <h1>TimeFlow</h1>
-        <button class="btn-icon" id="settingsBtn">⚙️</button>
-    </header>
-
-    <div class="container">
-        <div class="week-nav">
-            <button id="prevWeek">←</button>
-            <span class="current-week" id="currentWeekLabel">Esta semana</span>
-            <button id="nextWeek">→</button>
+        <div id="night-warning" class="night-warning">
+            <div class="icon">🌙</div>
+            <p>Es hora de descansar. Tu cerebro lo necesita.</p>
+            <p class="sub">Mañana podrás continuar con más claridad y energía.</p>
         </div>
 
-        <div class="timeline-container" id="timeline">
-            <!-- JS generará esto -->
+        <div class="quote" id="daily-quote"></div>
+
+        <section class="glass energy-card">
+            <div class="energy-header">
+                <span>⚡ Energía actual</span>
+                <span id="energy-emoji">⚡</span>
+            </div>
+            <input type="range" id="energy-slider" min="1" max="5" value="3" class="energy-slider">
+            <div class="energy-labels">
+                <span>😴</span><span>😐</span><span>🙂</span><span>💪</span><span>🚀</span>
+            </div>
+        </section>
+
+        <section class="glass progress-card">
+            <div class="row">
+                <span class="label">📅 Progreso semanal</span>
+                <span class="badge" id="current-day-badge">Hoy</span>
+            </div>
+            <div class="progress-details">
+                <div class="hours-left" id="week-hours-left">0<span> horas restantes</span></div>
+                <div class="progress-deadline">hasta domingo 11:59 PM</div>
+            </div>
+            <div class="progress-bar-bg">
+                <div id="week-progress-bar" class="progress-fill" style="width:0%"></div>
+            </div>
+        </section>
+
+        <nav class="day-tabs" id="day-tabs"></nav>
+        <div class="timeline" id="timeline"></div>
+
+        <section class="glass categories">
+            <h3>🎯 Mis prioridades</h3>
+            <div class="category-grid" id="categories-legend"></div>
+        </section>
+
+        <button class="btn-magic" id="btn-focus">⚡ Iniciar tarea de 5 minutos</button>
+        <p class="btn-sub">Solo necesitas empezar. El resto fluye.</p>
+
+        <div id="timer-panel" class="timer-panel glass">
+            <div class="timer-display" id="timer-display">05:00</div>
+            <button class="btn-cancel" id="btn-cancel-timer">Cancelar</button>
         </div>
 
-        <div class="categories-legend" id="categoriesLegend">
-            <!-- Leyenda de categorías -->
-        </div>
+        <footer class="footer">
+            “No tienes que ver toda la escalera, solo da el primer paso.” — M.L. King
+        </footer>
+
+        <button id="btn-idea" class="fab" title="Anotar idea rápida">💡</button>
     </div>
 
-    <button class="fab" id="mainFab">▶️</button>
-
-    <!-- Modal Nuevo Evento -->
-    <div class="modal-overlay" id="eventModal">
-        <div class="modal">
-            <h2 id="modalTitle">Nuevo Bloque</h2>
-            <div class="form-group">
-                <label>Tarea / Actividad</label>
-                <input type="text" id="taskInput" placeholder="Ej: Estudiar Matemáticas">
-            </div>
-            <div class="form-group">
-                <label>Categoría</label>
-                <select id="categorySelect">
-                    <option value="work">💼 Trabajo</option>
-                    <option value="study">📚 Estudio</option>
-                    <option value="health">💪 Salud</option>
-                    <option value="rest">😴 Descanso</option>
-                    <option value="personal">🏠 Personal</option>
-                </select>
-            </div>
+    <div class="modal-overlay" id="idea-modal-overlay">
+        <div class="modal-content" id="idea-modal-content">
+            <h3>💡 Capturar idea</h3>
+            <textarea id="idea-input" rows="3" placeholder="Escribe tu idea aquí..."></textarea>
             <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveEvent()">Guardar</button>
+                <button class="btn-cancel" id="btn-idea-cancel">Cerrar</button>
+                <button class="btn-save" id="btn-idea-save">Guardar</button>
             </div>
+            <div id="ideas-list" class="ideas-list"></div>
         </div>
     </div>
 
-    <!-- Timer Overlay -->
-    <div class="timer-overlay" id="timerOverlay">
-        <div class="timer-task" id="timerTaskName">Enfoque</div>
-        <div class="timer-display" id="timerDisplay">25:00</div>
-        <div class="timer-controls">
-            <button class="timer-btn btn-stop" id="stopTimerBtn">Detener</button>
-            <button class="timer-btn btn-close-timer" id="closeTimerBtn">Salir</button>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content" id="modal-content">
+            <h3>Elige el propósito</h3>
+            <div class="modal-options" id="modal-options"></div>
+            <button class="modal-cancel" id="modal-cancel-btn">Cancelar</button>
         </div>
     </div>
 
-    <script>
-        // --- ESTADO DE LA APP ---
-        const state = {
-            currentDate: new Date(),
-            events: JSON.parse(localStorage.getItem('tf_events')) || {},
-            categories: {
-                work: { name: 'Trabajo', color: '#3b82f6', icon: '💼' },
-                study: { name: 'Estudio', color: '#8b5cf6', icon: '📚' },
-                health: { name: 'Salud', color: '#10b981', icon: '💪' },
-                rest: { name: 'Descanso', color: '#f59e0b', icon: '😴' },
-                personal: { name: 'Personal', color: '#ec4899', icon: '🏠' }
-            },
-            timer: {
-                active: false,
-                timeLeft: 25 * 60,
-                interval: null,
-                task: ''
-            }
-        };
-
-        // --- INICIALIZACIÓN ---
-        document.addEventListener('DOMContentLoaded', () => {
-            renderTimeline();
-            renderLegend();
-            setupEventListeners();
-            
-            // Solicitar permiso de notificaciones
-            if ("Notification" in window && Notification.permission === "default") {
-                Notification.requestPermission();
-            }
-        });
-
-        function setupEventListeners() {
-            document.getElementById('prevWeek').addEventListener('click', () => changeWeek(-1));
-            document.getElementById('nextWeek').addEventListener('click', () => changeWeek(1));
-            document.getElementById('mainFab').addEventListener('click', toggleTimer);
-            document.getElementById('settingsBtn').addEventListener('click', () => alert('Configuración básica: Los datos se guardan automáticamente en este navegador.'));
-            
-            document.getElementById('stopTimerBtn').addEventListener('click', stopTimer);
-            document.getElementById('closeTimerBtn').addEventListener('click', () => {
-                stopTimer();
-                document.getElementById('timerOverlay').classList.remove('active');
-            });
-        }
-
-        // --- LÓGICA DE CALENDARIO ---
-        function getStartOfWeek(date) {
-            const d = new Date(date);
-            const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajustar para lunes
-            return new Date(d.setDate(diff));
-        }
-
-        function changeWeek(offset) {
-            state.currentDate.setDate(state.currentDate.getDate() + (offset * 7));
-            renderTimeline();
-        }
-
-        function renderTimeline() {
-            const container = document.getElementById('timeline');
-            container.innerHTML = '';
-            
-            const startOfWeek = getStartOfWeek(state.currentDate);
-            const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-            
-            // Actualizar etiqueta
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(endOfWeek.getDate() + 6);
-            document.getElementById('currentWeekLabel').textContent = 
-                `${startOfWeek.getDate()}/${startOfWeek.getMonth()+1} - ${endOfWeek.getDate()}/${endOfWeek.getMonth()+1}`;
-
-            for (let i = 0; i < 7; i++) {
-                const currentDay = new Date(startOfWeek);
-                currentDay.setDate(currentDay.getDate() + i);
-                const dateKey = currentDay.toISOString().split('T')[0];
-                
-                const col = document.createElement('div');
-                col.className = 'day-column';
-                
-                const header = document.createElement('div');
-                header.className = 'day-header';
-                header.textContent = `${days[i]} ${currentDay.getDate()}`;
-                col.appendChild(header);
-
-                // Slots de tiempo (8 AM a 8 PM)
-                for (let hour = 8; hour <= 20; hour++) {
-                    const slotKey = `${dateKey}-${hour}`;
-                    const event = state.events[slotKey];
-                    
-                    if (event) {
-                        const block = document.createElement('div');
-                        block.className = 'event-block';
-                        block.style.backgroundColor = state.categories[event.category].color;
-                        block.draggable = true;
-                        block.innerHTML = `
-                            <strong>${event.title}</strong>
-                            <button class="delete-btn" onclick="deleteEvent('${slotKey}', event)">×</button>
-                        `;
-                        // Drag events
-                        block.addEventListener('dragstart', (e) => {
-                            e.dataTransfer.setData('text/plain', slotKey);
-                            e.dataTransfer.effectAllowed = 'move';
-                        });
-                        col.appendChild(block);
-                    } else {
-                        const slot = document.createElement('div');
-                        slot.className = 'time-slot';
-                        slot.textContent = `${hour}:00`;
-                        slot.onclick = () => openModal(slotKey);
-                        
-                        // Drop events
-                        slot.addEventListener('dragover', (e) => e.preventDefault());
-                        slot.addEventListener('drop', (e) => handleDrop(e, slotKey));
-                        
-                        col.appendChild(slot);
-                    }
-                }
-                container.appendChild(col);
-            }
-        }
-
-        function renderLegend() {
-            const container = document.getElementById('categoriesLegend');
-            container.innerHTML = '';
-            Object.entries(state.categories).forEach(([key, cat]) => {
-                const item = document.createElement('div');
-                item.className = 'cat-item';
-                item.innerHTML = `<span class="cat-dot" style="background:${cat.color}"></span>${cat.icon} ${cat.name}`;
-                container.appendChild(item);
-            });
-        }
-
-        // --- GESTIÓN DE EVENTOS ---
-        let currentSlotKey = null;
-
-        function openModal(slotKey) {
-            currentSlotKey = slotKey;
-            document.getElementById('eventModal').classList.add('active');
-            document.getElementById('taskInput').value = '';
-            document.getElementById('taskInput').focus();
-        }
-
-        function closeModal() {
-            document.getElementById('eventModal').classList.remove('active');
-            currentSlotKey = null;
-        }
-
-        function saveEvent() {
-            const title = document.getElementById('taskInput').value;
-            const category = document.getElementById('categorySelect').value;
-            
-            if (title && currentSlotKey) {
-                state.events[currentSlotKey] = { title, category };
-                localStorage.setItem('tf_events', JSON.stringify(state.events));
-                renderTimeline();
-                closeModal();
-            }
-        }
-
-        function deleteEvent(key, event) {
-            event.stopPropagation();
-            if(confirm('¿Borrar este bloque?')) {
-                delete state.events[key];
-                localStorage.setItem('tf_events', JSON.stringify(state.events));
-                renderTimeline();
-            }
-        }
-
-        function handleDrop(e, targetKey) {
-            e.preventDefault();
-            const sourceKey = e.dataTransfer.getData('text/plain');
-            
-            if (sourceKey !== targetKey && !state.events[targetKey]) {
-                // Mover evento
-                state.events[targetKey] = state.events[sourceKey];
-                delete state.events[sourceKey];
-                localStorage.setItem('tf_events', JSON.stringify(state.events));
-                renderTimeline();
-            }
-        }
-
-        // --- TIMER & ENFOQUE ---
-        function toggleTimer() {
-            const fab = document.getElementById('mainFab');
-            
-            if (state.timer.active) {
-                stopTimer();
-                fab.classList.remove('playing');
-                fab.textContent = '▶️';
-            } else {
-                // Buscar tarea actual
-                const now = new Date();
-                const dateKey = now.toISOString().split('T')[0];
-                const hour = now.getHours();
-                const currentEvent = state.events[`${dateKey}-${hour}`];
-                
-                state.timer.task = currentEvent ? currentEvent.title : 'Tiempo de Enfoque';
-                state.timer.active = true;
-                state.timer.timeLeft = 25 * 60;
-                
-                document.getElementById('timerTaskName').textContent = state.timer.task;
-                document.getElementById('timerOverlay').classList.add('active');
-                fab.classList.add('playing');
-                fab.textContent = '⏹️';
-                
-                startTimerCountdown();
-            }
-        }
-
-        function startTimerCountdown() {
-            updateTimerDisplay();
-            state.timer.interval = setInterval(() => {
-                state.timer.timeLeft--;
-                updateTimerDisplay();
-                
-                if (state.timer.timeLeft <= 0) {
-                    stopTimer();
-                    alert('¡Tiempo terminado! Tómate un descanso.');
-                    document.getElementById('timerOverlay').classList.remove('active');
-                }
-            }, 1000);
-        }
-
-        function updateTimerDisplay() {
-            const m = Math.floor(state.timer.timeLeft / 60);
-            const s = state.timer.timeLeft % 60;
-            document.getElementById('timerDisplay').textContent = 
-                `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }
-
-        function stopTimer() {
-            clearInterval(state.timer.interval);
-            state.timer.active = false;
-        }
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
