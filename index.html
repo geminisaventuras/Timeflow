@@ -105,6 +105,82 @@
         </div>
     </div>
 
+    <!-- Modal de Configuración -->
+    <div class="modal-overlay" id="settings-modal-overlay">
+        <div class="modal-content modal-lg" id="settings-modal-content">
+            <h3>⚙️ Configuración</h3>
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="backup">📦 Backup</button>
+                <button class="settings-tab" data-tab="categories">🎨 Categorías</button>
+                <button class="settings-tab" data-tab="goals">🎯 Metas</button>
+                <button class="settings-tab" data-tab="sounds">🔊 Sonidos</button>
+            </div>
+            <div class="settings-panel active" id="panel-backup">
+                <p class="setting-desc">Exporta o importa tus datos en formato JSON.</p>
+                <div class="setting-actions">
+                    <button class="btn-setting" id="btn-export-data">📥 Exportar datos</button>
+                    <label class="btn-setting btn-upload">
+                        📤 Importar datos
+                        <input type="file" id="import-file" accept=".json" style="display:none;">
+                    </label>
+                </div>
+            </div>
+            <div class="settings-panel" id="panel-categories">
+                <p class="setting-desc">Personaliza los colores de tus categorías.</p>
+                <div id="category-colors-list"></div>
+            </div>
+            <div class="settings-panel" id="panel-goals">
+                <p class="setting-desc">Define metas semanales de horas por categoría.</p>
+                <div id="goals-list"></div>
+            </div>
+            <div class="settings-panel" id="panel-sounds">
+                <p class="setting-desc">Selecciona sonidos ambientales para concentración.</p>
+                <select id="sound-selector" class="sound-selector">
+                    <option value="">Sin sonido</option>
+                    <option value="rain">🌧️ Lluvia</option>
+                    <option value="cafe">☕ Cafetería</option>
+                    <option value="forest">🌲 Bosque</option>
+                    <option value="waves">🌊 Olas</option>
+                    <option value="white">⚪ Ruido blanco</option>
+                </select>
+                <input type="range" id="sound-volume" min="0" max="100" value="50" class="volume-slider">
+                <span id="volume-label">50%</span>
+            </div>
+            <button class="modal-cancel" id="settings-cancel-btn">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Estadísticas -->
+    <div class="modal-overlay" id="stats-modal-overlay">
+        <div class="modal-content modal-lg" id="stats-modal-content">
+            <h3>📊 Estadísticas Semanales</h3>
+            <div class="stats-header">
+                <button class="btn-nav-week" id="btn-prev-week">◀ Anterior</button>
+                <span id="stats-week-label">Semana actual</span>
+                <button class="btn-nav-week" id="btn-next-week">Siguiente ▶</button>
+            </div>
+            <div id="stats-chart" class="stats-chart"></div>
+            <div id="stats-details" class="stats-details"></div>
+            <div class="stats-actions">
+                <button class="btn-setting" id="btn-export-ics">📅 Exportar a Calendar</button>
+            </div>
+            <button class="modal-cancel" id="stats-cancel-btn">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modo Enfoque -->
+    <div class="focus-mode-overlay" id="focus-overlay">
+        <div class="focus-content">
+            <div class="focus-timer" id="focus-timer-display">05:00</div>
+            <div class="focus-task" id="focus-task-name">Tarea en progreso</div>
+            <div class="focus-breathing"></div>
+            <button class="btn-focus-exit" id="btn-focus-exit">Salir</button>
+        </div>
+    </div>
+
+    <button id="btn-settings" class="fab fab-secondary" title="Configuración">⚙️</button>
+    <button id="btn-stats" class="fab fab-tertiary" title="Estadísticas">📊</button>
+
     <script src="app.js"></script>
 </body>
 </html>
