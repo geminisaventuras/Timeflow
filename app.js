@@ -33,7 +33,11 @@
     let selectedHour = null;
     let timerInterval = null;
     let timerSeconds = 300;
+    let deferredPrompt = null;
 
+    const btnInstall = document.getElementById('btn-install');
+
+    // Modo oscuro
     function applyTheme() {
         if (darkMode) {
             document.body.classList.add('dark');
@@ -50,6 +54,7 @@
         applyTheme();
     }
 
+    // Hora Caracas
     function getCaracasNow() {
         try {
             const formatter = new Intl.DateTimeFormat('en-US', {
@@ -82,6 +87,7 @@
         return Math.max(0, Math.floor((endOfWeek - now) / 3600000));
     }
 
+    // Datos
     function initializeData() {
         DAYS.forEach(day => {
             if (!weekData[day]) {
@@ -102,6 +108,7 @@
 
     function saveData() { localStorage.setItem('timeflow_premium', JSON.stringify(weekData)); }
 
+    // Renderizado
     function renderAll() {
         updateClock();
         renderDayTabs();
@@ -330,6 +337,47 @@
         }, msUntilReminder);
     }
 
+    // Instalación nativa
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (btnInstall) {
+            btnInstall.style.display = 'block';
+            btnInstall.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`Instalación: ${outcome}`);
+                    deferredPrompt = null;
+                    btnInstall.style.display = 'none';
+                }
+            });
+        }
+    });
+
+    window.addEventListener('appinstalled', () => {
+        if (btnInstall) btnInstall.style.display = 'none';
+        deferredPrompt = null;
+        console.log('App instalada correctamente');
+    });
+
+    // Service Worker híbrido (intenta sw.js, si falla usa blob como fallback)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW registrado desde archivo:', reg.scope))
+                .catch(err => {
+                    console.warn('Error al registrar sw.js, intentando con blob:', err);
+                    const swCode = `self.addEventListener('install', e => self.skipWaiting()); self.addEventListener('activate', e => e.waitUntil(self.clients.claim())); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))); });`;
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl)
+                        .then(reg => console.log('SW registrado desde blob:', reg.scope))
+                        .catch(err2 => console.error('SW no registrado:', err2));
+                });
+        });
+    }
+
     // Event Listeners
     document.getElementById('btn-dark-mode').addEventListener('click', toggleTheme);
     document.getElementById('btn-focus').addEventListener('click', startTimer);
@@ -345,15 +393,7 @@
         if (e.target === this) closeIdeaModal();
     });
 
-    // Registrar Service Worker (archivo externo sw.js)
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
-                .catch(err => console.error('Error al registrar Service Worker:', err));
-        });
-    }
-
+    // Inicio
     applyTheme();
     initializeData();
     renderAll();
