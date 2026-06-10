@@ -162,7 +162,7 @@
                     label = cat.emoji + ' ' + cat.name;
                 }
             }
-            html += `<div class="timeline-slot ${isFixed ? 'fixed' : ''}" style="${bg}" data-hour="${h}">
+            html += `<div class="timeline-slot ${isFixed ? 'fixed' : ''}" style="${bg}" data-hour="${h}" draggable="true">
                 <span class="hour">${displayHour}:00 ${ampm}</span>
                 <span class="label">${label}</span>
             </div>`;
@@ -171,6 +171,7 @@
         container.querySelectorAll('.timeline-slot:not(.fixed)').forEach(slot => {
             slot.addEventListener('click', () => openModal(parseInt(slot.dataset.hour)));
         });
+        initDragAndDrop();
     }
 
     function renderLegend() {
@@ -383,22 +384,163 @@
     document.getElementById('btn-focus').addEventListener('click', startTimer);
     document.getElementById('btn-cancel-timer').addEventListener('click', stopTimer);
     document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
-    document.getElementById('modal-overlay').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
-    document.getElementById('btn-idea').addEventListener('click', openIdeaModal);
-    document.getElementById('btn-idea-cancel').addEventListener('click', closeIdeaModal);
-    document.getElementById('btn-idea-save').addEventListener('click', saveIdea);
-    document.getElementById('idea-modal-overlay').addEventListener('click', function(e) {
-        if (e.target === this) closeIdeaModal();
-    });
 
-    // Inicio
-    applyTheme();
-    initializeData();
-    renderAll();
-    requestNotificationPermission();
-    scheduleEveningReminder();
-    setInterval(updateClock, 1000);
-    setInterval(() => { updateProgress(); checkNight(); }, 60000);
+    // ============ NUEVAS FUNCIONALIDADES PREMIUM ============
+
+    // 1. Exportar/Importar datos (Backup JSON)
+    function exportData() {
+        const data = { weekData, categories: CATEGORIES, goals, soundSettings, ideas, exportDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timeflow-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.weekData) { weekData = data.weekData; localStorage.setItem('timeflow_premium', JSON.stringify(weekData)); }
+                if (data.categories) { CATEGORIES = data.categories; localStorage.setItem('timeflow_categories', JSON.stringify(CATEGORIES)); }
+                if (data.goals) { goals = data.goals; localStorage.setItem('timeflow_goals', JSON.stringify(goals)); }
+                if (data.soundSettings) { soundSettings = data.soundSettings; localStorage.setItem('timeflow_sounds', JSON.stringify(soundSettings)); }
+                if (data.ideas) { ideas = data.ideas; localStorage.setItem('timeflow_ideas', JSON.stringify(ideas)); }
+                alert('✅ Datos importados correctamente.');
+                location.reload();
+            } catch (err) { alert('❌ Error al importar.'); }
+        };
+        reader.readAsText(file);
+    }
+
+    // 2. Estadísticas visuales
+    function renderStatsChart(targetWeekData) {
+        const chart = document.getElementById('stats-chart');
+        const details = document.getElementById('stats-details');
+        const categoryHours = {};
+        CATEGORIES.forEach(cat => categoryHours[cat.id] = 0);
+        DAYS.forEach(day => {
+            const dayData = targetWeekData[day] || {};
+            for (let h = 0; h < 24; h++) {
+                const status = dayData[h];
+                if (status && status !== 'free' && status !== 'fixed' && categoryHours[status] !== undefined) categoryHours[status]++;
+            }
+        });
+        const maxHours = Math.max(...Object.values(categoryHours), 1);
+        chart.innerHTML = CATEGORIES.map(cat => {
+            const hours = categoryHours[cat.id] || 0;
+            return `<div class="stat-bar" style="height:${(hours/maxHours)*100}%;background:${cat.bg};border:1px solid ${cat.border};" data-hours="${hours}"></div>`;
+        }).join('');
+        details.innerHTML = CATEGORIES.map(cat => {
+            const hours = categoryHours[cat.id] || 0, goal = goals[cat.id] || 0;
+            return `<div class="stat-detail"><strong>${cat.emoji} ${cat.name}</strong><br>${hours}h${goal>0?' / '+goal+'h':''}</div>`;
+        }).join('');
+    }
+
+    function getWeekLabel(offset) {
+        const now = getCaracasNow();
+        const diffToMonday = now.getDay() === 0 ? -6 : 1 - now.getDay();
+        const monday = new Date(now); monday.setDate(now.getDate() + diffToMonday + offset*7);
+        const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+        return `${monday.toLocaleDateString('es-ES',{day:'numeric',month:'short'})} - ${sunday.toLocaleDateString('es-ES',{day:'numeric',month:'short'})}`;
+    }
+
+    // 3. Colores personalizados
+    function renderCategoryColors() {
+        const container = document.getElementById('category-colors-list');
+        container.innerHTML = CATEGORIES.map(cat => `
+            <div class="category-color-item" style="background:${cat.bg};">
+                <span>${cat.emoji} ${cat.name}</span>
+                <input type="color" class="color-picker-input" value="${cat.bg}" data-cat-id="${cat.id}">
+            </div>`).join('');
+        container.querySelectorAll('.color-picker-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const cat = CATEGORIES.find(c => c.id === e.target.dataset.catId);
+                if (cat) { cat.bg = cat.border = e.target.value; cat.text = '#fff'; localStorage.setItem('timeflow_categories', JSON.stringify(CATEGORIES)); renderAll(); }
+            });
+        });
+    }
+
+    // 4. Metas semanales
+    function renderGoals() {
+        const container = document.getElementById('goals-list');
+        container.innerHTML = CATEGORIES.map(cat => `
+            <div class="goal-item"><span>${cat.emoji} ${cat.name}</span>
+            <input type="number" class="goal-input" value="${goals[cat.id]||0}" min="0" max="168" data-cat-id="${cat.id}"><span>h/sem</span></div>`).join('');
+        container.querySelectorAll('.goal-input').forEach(input => {
+            input.addEventListener('change', (e) => { goals[e.target.dataset.catId] = parseInt(e.target.value)||0; localStorage.setItem('timeflow_goals', JSON.stringify(goals)); });
+        });
+    }
+
+    // 5. Sonidos ambientales
+    let audioCtx, oscillator, gainNode;
+    function playSound(type, vol) {
+        if (oscillator) { oscillator.stop(); oscillator = null; }
+        if (!type) return;
+        if (!audioCtx) { audioCtx = new (window.AudioContext||window.webkitAudioContext)(); gainNode = audioCtx.createGain(); gainNode.connect(audioCtx.destination); }
+        oscillator = audioCtx.createOscillator();
+        oscillator.type = type==='white'?'sawtooth':'sine';
+        oscillator.frequency.value = {rain:200,cafe:400,forest:300,waves:150,white:100}[type]||100;
+        gainNode.gain.value = vol/200;
+        oscillator.connect(gainNode); oscillator.start();
+    }
+
+    // 6. Modo Enfoque
+    function startFocusMode(taskName) {
+        timerSeconds = 300;
+        document.getElementById('focus-task-name').textContent = taskName || 'Tarea en progreso';
+        document.getElementById('focus-overlay').classList.add('active');
+        updateFocusTimerDisplay();
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timerSeconds--; updateFocusTimerDisplay();
+            if (timerSeconds <= 0) { clearInterval(timerInterval); if(navigator.vibrate) navigator.vibrate([200,100,200]); alert('✨ ¡Lo lograste!'); document.getElementById('focus-overlay').classList.remove('active'); }
+        }, 1000);
+    }
+    function updateFocusTimerDisplay() {
+        const m = Math.floor(timerSeconds/60), s = timerSeconds%60;
+        document.getElementById('focus-timer-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    function exitFocusMode() { if(timerInterval) clearInterval(timerInterval); document.getElementById('focus-overlay').classList.remove('active'); }
+
+    // 7. Drag & Drop
+    let draggedEl = null;
+    function initDragAndDrop() {
+        const timeline = document.getElementById('timeline');
+        timeline.addEventListener('dragstart', e => { if(e.target.classList.contains('timeline-slot')&&!e.target.classList.contains('fixed')){draggedEl=e.target;e.target.classList.add('dragging');} });
+        timeline.addEventListener('dragover', e => e.preventDefault());
+        timeline.addEventListener('drop', e => {
+            e.preventDefault();
+            const dropTarget = e.target.closest('.timeline-slot');
+            if(dropTarget&&draggedEl&&dropTarget!==draggedEl&&!dropTarget.classList.contains('fixed')){
+                const fromHour=parseInt(draggedEl.dataset.hour), toHour=parseInt(dropTarget.dataset.hour);
+                [weekData[currentDay][fromHour],weekData[currentDay][toHour]]=[weekData[currentDay][toHour],weekData[currentDay][fromHour]];
+                saveData(); renderTimeline();
+            }
+        });
+        timeline.addEventListener('dragend', () => { if(draggedEl) draggedEl.classList.remove('dragging'); draggedEl=null; });
+    }
+
+    // 8. Exportar a Calendar
+    function exportToICS() {
+        let ics='BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//TimeFlow//ES\n';
+        const today=new Date(), diffToMonday=today.getDay()===0?-6:1-today.getDay(), monday=new Date(today); monday.setDate(today.getDate()+diffToMonday);
+        DAYS.forEach((day,idx)=>{for(let h=0;h<24;h++){const st=weekData[day]?.[h];if(st&&st!=='free'&&st!=='fixed'){const cat=CATEGORIES.find(c=>c.id===st);if(cat){const ev=new Date(monday);ev.setDate(monday.getDate()+idx);ev.setHours(h,0,0,0);const end=new Date(ev);end.setHours(h+1);ics+=`BEGIN:VEVENT\nDTSTART:${ev.toISOString().replace(/[-:]/g,'').split('.')[0]}Z\nDTEND:${end.toISOString().replace(/[-:]/g,'').split('.')[0]}Z\nSUMMARY:${cat.emoji} ${cat.name}\nEND:VEVENT\n`;}}}});
+        ics+='END:VCALENDAR';
+        const blob=new Blob([ics],{type:'text/calendar'}), url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download='timeflow.ics'; a.click();
+    }
+
+    // Event listeners nuevos
+    document.getElementById('btn-settings').addEventListener('click',()=>{document.getElementById('settings-modal-overlay').classList.add('active');renderCategoryColors();renderGoals();});
+    document.getElementById('settings-cancel-btn').addEventListener('click',()=>document.getElementById('settings-modal-overlay').classList.remove('active'));
+    document.getElementById('btn-stats').addEventListener('click',()=>{document.getElementById('stats-modal-overlay').classList.add('active');document.getElementById('stats-week-label').textContent=getWeekLabel(0);renderStatsChart(weekData);});
+    document.getElementById('stats-cancel-btn').addEventListener('click',()=>document.getElementById('stats-modal-overlay').classList.remove('active'));
+    document.getElementById('btn-export-data').addEventListener('click',exportData);
+    document.getElementById('import-file').addEventListener('change',e=>{if(e.target.files[0])importData(e.target.files[0]);});
+    document.getElementById('btn-export-ics').addEventListener('click',exportToICS);
+    document.getElementById('btn-focus-exit').addEventListener('click',exitFocusMode);
+    document.querySelectorAll('.settings-tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('.settings-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.settings-panel').forEach(p=>p.classList.remove('active'));tab.classList.add('active');document.getElementById('panel-'+tab.dataset.tab).classList.add('active');}));
 })();
