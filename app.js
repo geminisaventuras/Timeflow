@@ -29,24 +29,17 @@
     let ideas = JSON.parse(localStorage.getItem('timeflow_ideas')) || [];
     let energy = JSON.parse(localStorage.getItem('timeflow_energy')) || { value: 3 };
     let darkMode = JSON.parse(localStorage.getItem('timeflow_dark')) || false;
-    
-    // NUEVO: Cargar metas semanales (default 0 si no existen)
-    let weeklyGoals = JSON.parse(localStorage.getItem('timeflow_goals')) || {};
-    // Inicializar metas a 0 si es la primera vez
-    if (Object.keys(weeklyGoals).length === 0) {
-        CATEGORIES.forEach(c => weeklyGoals[c.id] = 0);
-        localStorage.setItem('timeflow_goals', JSON.stringify(weeklyGoals));
-    }
-
     let currentDay = getCurrentDayCaracas();
     let selectedHour = null;
     let timerInterval = null;
     let timerSeconds = 300;
-    let deferredPrompt = null;
 
+    let deferredPrompt = null;
     const btnInstall = document.getElementById('btn-install');
-    const btnInstallFallback = document.getElementById('btn-install-fallback');
+    const btnInstallHelp = document.getElementById('btn-install-help');
     const btnNotify = document.getElementById('btn-notify');
+    const welcomeModal = document.getElementById('welcome-modal');
+    const btnStart = document.getElementById('btn-start');
 
     // Modo oscuro
     function applyTheme() {
@@ -117,27 +110,6 @@
     }
 
     function saveData() { localStorage.setItem('timeflow_premium', JSON.stringify(weekData)); }
-    
-    // NUEVO: Guardar metas
-    function saveGoals() {
-        localStorage.setItem('timeflow_goals', JSON.stringify(weeklyGoals));
-        renderLegend(); // Re-renderizar para mostrar cambios
-    }
-
-    // NUEVO: Función global para editar metas desde el HTML
-    window.editGoal = function(catId) {
-        const current = weeklyGoals[catId] || 0;
-        const input = prompt(`Define la meta semanal de horas para esta categoría:\nActual: ${current}h`, current);
-        if (input !== null) {
-            const val = parseInt(input);
-            if (!isNaN(val) && val >= 0) {
-                weeklyGoals[catId] = val;
-                saveGoals();
-            } else {
-                alert("Por favor ingresa un número válido de horas.");
-            }
-        }
-    };
 
     function renderAll() {
         updateClock();
@@ -207,31 +179,9 @@
         const container = document.getElementById('categories-legend');
         container.innerHTML = CATEGORIES.map(cat => {
             const today = countHours(cat.id, currentDay);
-            const weekTotal = DAYS.reduce((sum, d) => sum + countHours(cat.id, d), 0);
-            const goal = weeklyGoals[cat.id] || 0;
-            
-            // Calcular porcentaje
-            let percent = 0;
-            if (goal > 0) percent = Math.min(100, Math.round((weekTotal / goal) * 100));
-            
-            // Estilo de la barra de progreso
-            const barColor = weekTotal >= goal && goal > 0 ? '#10b981' : cat.text; // Verde si cumple
-            
-            return `
-            <div class="category-card" style="background:${cat.bg}; border-color:${cat.border}; color:${cat.text};">
-                <div style="flex:1;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                        <span style="font-weight:600;">${cat.emoji} ${cat.name}</span>
-                        <button onclick="editGoal('${cat.id}')" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;" title="Editar meta">🎯</button>
-                    </div>
-                    <div style="font-size:0.75rem; margin-bottom:4px; opacity:0.9;">
-                        Hoy: ${today}h · Sem: ${weekTotal}${goal > 0 ? '/'+goal+'h' : 'h'}
-                    </div>
-                    ${goal > 0 ? `
-                    <div style="width:100%; height:4px; background:rgba(0,0,0,0.1); border-radius:2px; overflow:hidden;">
-                        <div style="width:${percent}%; height:100%; background:${barColor}; transition:width 0.5s;"></div>
-                    </div>` : '<div style="font-size:0.7rem; font-style:italic; opacity:0.7;">Toca 🎯 para fijar meta</div>'}
-                </div>
+            const week = DAYS.reduce((sum, d) => sum + countHours(cat.id, d), 0);
+            return `<div class="category-card" style="background:${cat.bg}; border-color:${cat.border}; color:${cat.text};">
+                <span>${cat.emoji} ${cat.name}</span><span>Hoy ${today}h · Sem ${week}h</span>
             </div>`;
         }).join('');
     }
@@ -275,7 +225,7 @@
         selectedHour = hour;
         const optionsContainer = document.getElementById('modal-options');
         optionsContainer.innerHTML = CATEGORIES.map(c =>
-            `<div class="modal-option" style="background:${c.bg}; border-color:${cat.border}; color:${c.text};" data-cat="${c.id}">${c.emoji} ${c.name}</div>`
+            `<div class="modal-option" style="background:${c.bg}; border-color:${c.border}; color:${c.text};" data-cat="${c.id}">${c.emoji} ${c.name}</div>`
         ).join('');
         optionsContainer.querySelectorAll('.modal-option').forEach(opt => {
             opt.addEventListener('click', () => assignCategory(opt.dataset.cat));
@@ -399,19 +349,23 @@
         if (btnNotify) btnNotify.style.display = 'block';
     }
 
-    // Instalación nativa
+    // --- Instalación nativa mejorada ---
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
         if (btnInstall) {
             btnInstall.style.display = 'block';
-            btnInstall.addEventListener('click', async () => {
+            // Eliminar listeners previos (por si se dispara varias veces)
+            btnInstall.replaceWith(btnInstall.cloneNode(true));
+            const newBtn = document.getElementById('btn-install');
+            newBtn.addEventListener('click', async () => {
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
                     console.log(`Instalación: ${outcome}`);
                     deferredPrompt = null;
-                    btnInstall.style.display = 'none';
+                    newBtn.style.display = 'none';
+                    if (btnInstallHelp) btnInstallHelp.style.display = 'none';
                 }
             });
         }
@@ -419,21 +373,21 @@
 
     window.addEventListener('appinstalled', () => {
         if (btnInstall) btnInstall.style.display = 'none';
-        if (btnInstallFallback) btnInstallFallback.style.display = 'none';
+        if (btnInstallHelp) btnInstallHelp.style.display = 'none';
         deferredPrompt = null;
     });
 
-    // Fallback si el evento no se dispara en 3 segundos
+    // Si después de 5 segundos no hay evento, mostramos ayuda
     setTimeout(() => {
         if (!deferredPrompt && btnInstall && btnInstall.style.display === 'none') {
-            if (btnInstallFallback) {
-                btnInstallFallback.style.display = 'block';
-                btnInstallFallback.addEventListener('click', () => {
-                    alert('Para instalar la app, toca el menú ⋮ y selecciona "Agregar a la pantalla de inicio".');
+            if (btnInstallHelp) {
+                btnInstallHelp.style.display = 'block';
+                btnInstallHelp.addEventListener('click', () => {
+                    alert('Para instalar la app: toca el menú ⋮ → "Agregar a la pantalla de inicio".\n(Así aparecerá como una app nativa.)');
                 });
             }
         }
-    }, 3000);
+    }, 5000);
 
     // Service Worker
     if ('serviceWorker' in navigator) {
@@ -444,7 +398,7 @@
         });
     }
 
-    // Event Listeners
+    // Event Listeners generales
     document.getElementById('btn-dark-mode').addEventListener('click', toggleTheme);
     document.getElementById('btn-notify').addEventListener('click', enableNotifications);
     document.getElementById('btn-focus').addEventListener('click', startTimer);
@@ -460,10 +414,24 @@
         if (e.target === this) closeIdeaModal();
     });
 
-    // Inicio
-    applyTheme();
-    initializeData();
-    renderAll();
-    setInterval(updateClock, 1000);
-    setInterval(() => { updateProgress(); checkNight(); }, 60000);
+    // Inicio tras interacción
+    function startApp() {
+        if (welcomeModal) welcomeModal.remove();
+        applyTheme();
+        initializeData();
+        renderAll();
+        setInterval(updateClock, 1000);
+        setInterval(() => { updateProgress(); checkNight(); }, 60000);
+    }
+
+    if (btnStart) {
+        btnStart.addEventListener('click', startApp);
+    }
+
+    // Fallback por si no toca "Comenzar"
+    setTimeout(() => {
+        if (welcomeModal && welcomeModal.parentNode) {
+            startApp();
+        }
+    }, 5000);
 })();
