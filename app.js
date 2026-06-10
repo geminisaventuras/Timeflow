@@ -29,6 +29,8 @@
     let ideas = JSON.parse(localStorage.getItem('timeflow_ideas')) || [];
     let energy = JSON.parse(localStorage.getItem('timeflow_energy')) || { value: 3 };
     let darkMode = JSON.parse(localStorage.getItem('timeflow_dark')) || false;
+    let goals = JSON.parse(localStorage.getItem('timeflow_goals')) || {};
+    let soundSettings = JSON.parse(localStorage.getItem('timeflow_sounds')) || { type: '', volume: 50 };
     let currentDay = getCurrentDayCaracas();
     let selectedHour = null;
     let timerInterval = null;
@@ -543,4 +545,17 @@
     document.getElementById('btn-export-ics').addEventListener('click',exportToICS);
     document.getElementById('btn-focus-exit').addEventListener('click',exitFocusMode);
     document.querySelectorAll('.settings-tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('.settings-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.settings-panel').forEach(p=>p.classList.remove('active'));tab.classList.add('active');document.getElementById('panel-'+tab.dataset.tab).classList.add('active');}));
+    
+    // Sonidos y volumen
+    document.getElementById('sound-selector').addEventListener('change',(e)=>{soundSettings.type=e.target.value;localStorage.setItem('timeflow_sounds',JSON.stringify(soundSettings));playSound(soundSettings.type,soundSettings.volume);});
+    document.getElementById('sound-volume').addEventListener('input',(e)=>{soundSettings.volume=parseInt(e.target.value);document.getElementById('volume-label').textContent=soundSettings.volume+'%';localStorage.setItem('timeflow_sounds',JSON.stringify(soundSettings));if(soundSettings.type)playSound(soundSettings.type,soundSettings.volume);});
+    
+    // Navegación de semanas en estadísticas
+    let currentWeekOffset = 0;
+    document.getElementById('btn-prev-week').addEventListener('click',()=>{currentWeekOffset--;document.getElementById('stats-week-label').textContent=getWeekLabel(currentWeekOffset);});
+    document.getElementById('btn-next-week').addEventListener('click',()=>{currentWeekOffset++;document.getElementById('stats-week-label').textContent=getWeekLabel(currentWeekOffset);});
+    
+    // Inicializar notificaciones
+    requestNotificationPermission();
+    scheduleEveningReminder();
 })();
