@@ -2,184 +2,187 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>TimeFlow · Premium</title>
-    <meta name="description" content="Tu compañero para gestionar el tiempo con TDAH">
-    <meta name="theme-color" content="#4f46e5">
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeFlow - Planificador Semanal Inteligente</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="app">
+    <div class="app-container">
+        <!-- Header -->
         <header class="header">
             <div class="logo">
-                <div class="logo-icon">T</div>
-                <div class="logo-text">
-                    <h1>TimeFlow</h1>
-                    <p>Premium</p>
-                </div>
+                <span class="logo-icon">⏱️</span>
+                <h1>TimeFlow</h1>
             </div>
             <div class="header-actions">
-                <button id="btn-dark-mode" class="icon-btn" title="Modo oscuro">🌓</button>
-                <button id="btn-install" class="icon-btn" title="Instalar" style="display:none;">📲</button>
-                <div class="live-clock">
-                    <div class="tz">Caracas</div>
-                    <div class="time" id="live-clock">--:--</div>
-                </div>
+                <button id="btn-stats" class="icon-btn" title="Estadísticas">📊</button>
+                <button id="btn-settings" class="icon-btn" title="Configuración">⚙️</button>
             </div>
         </header>
 
-        <div id="night-warning" class="night-warning">
-            <div class="icon">🌙</div>
-            <p>Es hora de descansar. Tu cerebro lo necesita.</p>
-            <p class="sub">Mañana podrás continuar con más claridad y energía.</p>
-        </div>
-
-        <div class="quote" id="daily-quote"></div>
-
-        <section class="glass energy-card">
-            <div class="energy-header">
-                <span>⚡ Energía actual</span>
-                <span id="energy-emoji">⚡</span>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Week Navigation -->
+            <div class="week-nav">
+                <button id="prev-week" class="nav-btn">◀</button>
+                <h2 id="current-week-label">Semana Actual</h2>
+                <button id="next-week" class="nav-btn">▶</button>
             </div>
-            <input type="range" id="energy-slider" min="1" max="5" value="3" class="energy-slider">
-            <div class="energy-labels">
-                <span>😴</span><span>😐</span><span>🙂</span><span>💪</span><span>🚀</span>
-            </div>
-        </section>
 
-        <section class="glass progress-card">
-            <div class="row">
-                <span class="label">📅 Progreso semanal</span>
-                <span class="badge" id="current-day-badge">Hoy</span>
-            </div>
-            <div class="progress-details">
-                <div class="hours-left" id="week-hours-left">0<span> horas restantes</span></div>
-                <div class="progress-deadline">hasta domingo 11:59 PM</div>
-            </div>
-            <div class="progress-bar-bg">
-                <div id="week-progress-bar" class="progress-fill" style="width:0%"></div>
-            </div>
-        </section>
-
-        <nav class="day-tabs" id="day-tabs"></nav>
-        <div class="timeline" id="timeline"></div>
-
-        <section class="glass categories">
-            <h3>🎯 Mis prioridades</h3>
-            <div class="category-grid" id="categories-legend"></div>
-        </section>
-
-        <button class="btn-magic" id="btn-focus">⚡ Iniciar tarea de 5 minutos</button>
-        <p class="btn-sub">Solo necesitas empezar. El resto fluye.</p>
-
-        <div id="timer-panel" class="timer-panel glass">
-            <div class="timer-display" id="timer-display">05:00</div>
-            <button class="btn-cancel" id="btn-cancel-timer">Cancelar</button>
-        </div>
-
-        <footer class="footer">
-            “No tienes que ver toda la escalera, solo da el primer paso.” — M.L. King
-        </footer>
-
-        <button id="btn-idea" class="fab" title="Anotar idea rápida">💡</button>
-    </div>
-
-    <div class="modal-overlay" id="idea-modal-overlay">
-        <div class="modal-content" id="idea-modal-content">
-            <h3>💡 Capturar idea</h3>
-            <textarea id="idea-input" rows="3" placeholder="Escribe tu idea aquí..."></textarea>
-            <div class="modal-actions">
-                <button class="btn-cancel" id="btn-idea-cancel">Cerrar</button>
-                <button class="btn-save" id="btn-idea-save">Guardar</button>
-            </div>
-            <div id="ideas-list" class="ideas-list"></div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-overlay">
-        <div class="modal-content" id="modal-content">
-            <h3>Elige el propósito</h3>
-            <div class="modal-options" id="modal-options"></div>
-            <button class="modal-cancel" id="modal-cancel-btn">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- Modal de Configuración -->
-    <div class="modal-overlay" id="settings-modal-overlay">
-        <div class="modal-content modal-lg" id="settings-modal-content">
-            <h3>⚙️ Configuración</h3>
-            <div class="settings-tabs">
-                <button class="settings-tab active" data-tab="backup">📦 Backup</button>
-                <button class="settings-tab" data-tab="categories">🎨 Categorías</button>
-                <button class="settings-tab" data-tab="goals">🎯 Metas</button>
-                <button class="settings-tab" data-tab="sounds">🔊 Sonidos</button>
-            </div>
-            <div class="settings-panel active" id="panel-backup">
-                <p class="setting-desc">Exporta o importa tus datos en formato JSON.</p>
-                <div class="setting-actions">
-                    <button class="btn-setting" id="btn-export-data">📥 Exportar datos</button>
-                    <label class="btn-setting btn-upload">
-                        📤 Importar datos
-                        <input type="file" id="import-file" accept=".json" style="display:none;">
-                    </label>
+            <!-- Timeline Container -->
+            <div class="timeline-wrapper">
+                <div class="timeline-header">
+                    <div class="time-col">Hora</div>
+                    <div class="days-grid" id="days-header">
+                        <!-- Days injected by JS -->
+                    </div>
+                </div>
+                <div class="timeline-body" id="timeline-body">
+                    <!-- Time slots injected by JS -->
                 </div>
             </div>
-            <div class="settings-panel" id="panel-categories">
-                <p class="setting-desc">Personaliza los colores de tus categorías.</p>
-                <div id="category-colors-list"></div>
+        </main>
+
+        <!-- Floating Action Button -->
+        <button id="fab-add" class="fab">+</button>
+        <button id="fab-focus" class="fab fab-secondary" style="display:none;">🎯</button>
+    </div>
+
+    <!-- Modal: Add/Edit Block -->
+    <div id="modal-block" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Nuevo Bloque</h3>
+            <form id="block-form">
+                <input type="hidden" id="block-id">
+                <input type="hidden" id="block-day">
+                <input type="hidden" id="block-hour">
+                
+                <div class="form-group">
+                    <label>Título</label>
+                    <input type="text" id="block-title" required placeholder="Ej: Estudiar Matemáticas">
+                </div>
+                
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="block-category">
+                        <!-- Categories injected by JS -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Duración (horas)</label>
+                    <input type="number" id="block-duration" min="0.5" step="0.5" value="1" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="btn-delete-block" class="btn-danger" style="display:none;">Eliminar</button>
+                    <div class="spacer"></div>
+                    <button type="button" id="btn-cancel-block" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Settings -->
+    <div id="modal-settings" class="modal">
+        <div class="modal-content modal-large">
+            <h3>Configuración</h3>
+            <div class="settings-tabs">
+                <button class="tab-btn active" data-tab="tab-categories">Categorías</button>
+                <button class="tab-btn" data-tab="tab-goals">Metas</button>
+                <button class="tab-btn" data-tab="tab-sounds">Sonidos</button>
+                <button class="tab-btn" data-tab="tab-backup">Backup</button>
             </div>
-            <div class="settings-panel" id="panel-goals">
-                <p class="setting-desc">Define metas semanales de horas por categoría.</p>
+
+            <div id="tab-categories" class="tab-content active">
+                <div id="categories-list"></div>
+                <button id="btn-add-category" class="btn-small">+ Nueva Categoría</button>
+            </div>
+
+            <div id="tab-goals" class="tab-content">
+                <p>Define tus horas objetivo semanales por categoría.</p>
                 <div id="goals-list"></div>
             </div>
-            <div class="settings-panel" id="panel-sounds">
-                <p class="setting-desc">Selecciona sonidos ambientales para concentración.</p>
-                <select id="sound-selector" class="sound-selector">
-                    <option value="">Sin sonido</option>
-                    <option value="rain">🌧️ Lluvia</option>
-                    <option value="cafe">☕ Cafetería</option>
-                    <option value="forest">🌲 Bosque</option>
-                    <option value="waves">🌊 Olas</option>
-                    <option value="white">⚪ Ruido blanco</option>
-                </select>
-                <input type="range" id="sound-volume" min="0" max="100" value="50" class="volume-slider">
-                <span id="volume-label">50%</span>
+
+            <div id="tab-sounds" class="tab-content">
+                <div class="form-group">
+                    <label>Ambiente Sonoro</label>
+                    <select id="sound-select">
+                        <option value="none">Silencio</option>
+                        <option value="rain">Lluvia 🌧️</option>
+                        <option value="cafe">Cafetería ☕</option>
+                        <option value="forest">Bosque 🌲</option>
+                        <option value="waves">Olas 🌊</option>
+                        <option value="white">Ruido Blanco ⚪</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Volumen</label>
+                    <input type="range" id="sound-volume" min="0" max="100" value="50">
+                </div>
+                <button id="btn-test-sound" class="btn-secondary">Probar Sonido</button>
             </div>
-            <button class="modal-cancel" id="settings-cancel-btn">Cerrar</button>
+
+            <div id="tab-backup" class="tab-content">
+                <div class="backup-actions">
+                    <button id="btn-export" class="btn-primary">📥 Exportar Datos (JSON)</button>
+                    <label class="btn-secondary" style="display:inline-block; cursor:pointer;">
+                        📤 Importar Datos
+                        <input type="file" id="file-import" accept=".json" style="display:none;">
+                    </label>
+                </div>
+                <button id="btn-reset-app" class="btn-danger" style="margin-top:20px; width:100%;">⚠️ Borrar Todo</button>
+            </div>
+
+            <div class="form-actions" style="margin-top:20px;">
+                <button id="btn-close-settings" class="btn-secondary" style="width:100%;">Cerrar</button>
+            </div>
         </div>
     </div>
 
-    <!-- Modal de Estadísticas -->
-    <div class="modal-overlay" id="stats-modal-overlay">
-        <div class="modal-content modal-lg" id="stats-modal-content">
-            <h3>📊 Estadísticas Semanales</h3>
-            <div class="stats-header">
-                <button class="btn-nav-week" id="btn-prev-week">◀ Anterior</button>
-                <span id="stats-week-label">Semana actual</span>
-                <button class="btn-nav-week" id="btn-next-week">Siguiente ▶</button>
+    <!-- Modal: Statistics -->
+    <div id="modal-stats" class="modal">
+        <div class="modal-content modal-large">
+            <h3>Estadísticas Semanales</h3>
+            <div class="stats-nav">
+                <button id="stats-prev" class="nav-btn">◀</button>
+                <span id="stats-week-label">Semana Actual</span>
+                <button id="stats-next" class="nav-btn">▶</button>
             </div>
-            <div id="stats-chart" class="stats-chart"></div>
-            <div id="stats-details" class="stats-details"></div>
-            <div class="stats-actions">
-                <button class="btn-setting" id="btn-export-ics">📅 Exportar a Calendar</button>
+            
+            <div class="chart-container">
+                <canvas id="stats-chart"></canvas>
             </div>
-            <button class="modal-cancel" id="stats-cancel-btn">Cerrar</button>
+            
+            <div id="stats-details" class="stats-details">
+                <!-- Details injected by JS -->
+            </div>
+
+            <div class="form-actions" style="margin-top:20px;">
+                <button id="btn-export-ics" class="btn-secondary">📅 Exportar a Calendar (.ics)</button>
+                <button id="btn-close-stats" class="btn-secondary" style="margin-left:auto;">Cerrar</button>
+            </div>
         </div>
     </div>
 
-    <!-- Modo Enfoque -->
-    <div class="focus-mode-overlay" id="focus-overlay">
+    <!-- Modal: Focus Mode -->
+    <div id="modal-focus" class="modal focus-mode">
         <div class="focus-content">
-            <div class="focus-timer" id="focus-timer-display">05:00</div>
-            <div class="focus-task" id="focus-task-name">Tarea en progreso</div>
-            <div class="focus-breathing"></div>
-            <button class="btn-focus-exit" id="btn-focus-exit">Salir</button>
+            <h2 id="focus-task-name">Tarea Actual</h2>
+            <div class="timer-display" id="focus-timer">25:00</div>
+            <div class="breathing-circle"></div>
+            <div class="focus-controls">
+                <button id="btn-pause-focus" class="btn-primary">Pausar</button>
+                <button id="btn-stop-focus" class="btn-danger">Salir</button>
+            </div>
+            <p class="focus-hint">Modo Enfoque Activado • Notificaciones Silenciadas</p>
         </div>
     </div>
-
-    <button id="btn-settings" class="fab fab-secondary" title="Configuración">⚙️</button>
-    <button id="btn-stats" class="fab fab-tertiary" title="Estadísticas">📊</button>
 
     <script src="app.js"></script>
 </body>
