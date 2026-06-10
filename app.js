@@ -1,5 +1,4 @@
 (function() {
-    // Constantes
     const CARACAS_TZ = 'America/Caracas';
     const DAYS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
     const DAY_NAMES = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -26,7 +25,6 @@
         "Las ideas sin acción son sueños; con acción, son vida."
     ];
 
-    // Estado
     let weekData = JSON.parse(localStorage.getItem('timeflow_premium')) || {};
     let ideas = JSON.parse(localStorage.getItem('timeflow_ideas')) || [];
     let energy = JSON.parse(localStorage.getItem('timeflow_energy')) || { value: 3 };
@@ -36,7 +34,6 @@
     let timerInterval = null;
     let timerSeconds = 300;
 
-    // Aplicar modo oscuro guardado o automático
     function applyTheme() {
         if (darkMode) {
             document.body.classList.add('dark');
@@ -53,7 +50,6 @@
         applyTheme();
     }
 
-    // Tiempo Caracas
     function getCaracasNow() {
         try {
             const formatter = new Intl.DateTimeFormat('en-US', {
@@ -86,7 +82,6 @@
         return Math.max(0, Math.floor((endOfWeek - now) / 3600000));
     }
 
-    // Inicializar datos
     function initializeData() {
         DAYS.forEach(day => {
             if (!weekData[day]) {
@@ -105,11 +100,8 @@
         saveData();
     }
 
-    function saveData() {
-        localStorage.setItem('timeflow_premium', JSON.stringify(weekData));
-    }
+    function saveData() { localStorage.setItem('timeflow_premium', JSON.stringify(weekData)); }
 
-    // Renderizado
     function renderAll() {
         updateClock();
         renderDayTabs();
@@ -205,7 +197,6 @@
         document.getElementById('night-warning').style.display = (h >= 0 && h < 6) ? 'block' : 'none';
     }
 
-    // Energía
     function renderEnergy() {
         const slider = document.getElementById('energy-slider');
         const emoji = document.getElementById('energy-emoji');
@@ -219,11 +210,7 @@
         });
     }
 
-    // Acciones
-    function switchDay(day) {
-        currentDay = day;
-        renderAll();
-    }
+    function switchDay(day) { currentDay = day; renderAll(); }
 
     function openModal(hour) {
         selectedHour = hour;
@@ -253,7 +240,6 @@
         renderAll();
     }
 
-    // Ideas
     function openIdeaModal() {
         document.getElementById('idea-modal-overlay').classList.add('active');
         setTimeout(() => document.getElementById('idea-modal-content').classList.add('active'), 10);
@@ -287,12 +273,13 @@
         list.innerHTML = ideas.map((idea, i) => `
             <div class="idea-item">
                 <span>${idea.text}</span>
-                <button onclick="deleteIdea(${i})">✕</button>
-            </div>
-        `).join('');
+                <button class="delete-idea" data-index="${i}">✕</button>
+            </div>`).join('');
+        list.querySelectorAll('.delete-idea').forEach(btn => {
+            btn.addEventListener('click', () => deleteIdea(parseInt(btn.dataset.index)));
+        });
     }
 
-    // Temporizador
     function startTimer() {
         timerSeconds = 300;
         document.getElementById('timer-panel').style.display = 'block';
@@ -322,7 +309,6 @@
         document.getElementById('timer-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
-    // Notificaciones
     function requestNotificationPermission() {
         if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
             Notification.requestPermission();
@@ -331,18 +317,16 @@
 
     function scheduleEveningReminder() {
         const now = getCaracasNow();
-        const reminderHour = 21; // 9 PM
+        const reminderHour = 21;
         let reminderTime = new Date(now);
         reminderTime.setHours(reminderHour, 0, 0, 0);
-        if (now > reminderTime) {
-            reminderTime.setDate(reminderTime.getDate() + 1);
-        }
+        if (now > reminderTime) reminderTime.setDate(reminderTime.getDate() + 1);
         const msUntilReminder = reminderTime - now;
         setTimeout(() => {
             if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('TimeFlow', { body: '📅 Planifica tu día de mañana. Unos minutos ahora ahorran horas mañana.' });
             }
-            scheduleEveningReminder(); // Repetir diario
+            scheduleEveningReminder();
         }, msUntilReminder);
     }
 
@@ -361,14 +345,15 @@
         if (e.target === this) closeIdeaModal();
     });
 
-    // PWA
+    // Registrar Service Worker (archivo externo sw.js)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js');
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+                .catch(err => console.error('Error al registrar Service Worker:', err));
         });
     }
 
-    // Inicio
     applyTheme();
     initializeData();
     renderAll();
