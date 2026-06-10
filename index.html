@@ -4,21 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TimeFlow - Planificador Semanal</title>
-    <!-- Iconos -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --bg: #f3f4f6;
-            --surface: #ffffff;
-            --text: #1f2937;
-            --text-light: #6b7280;
-            --danger: #ef4444;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
             --success: #10b981;
+            --danger: #ef4444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -27,9 +23,9 @@
 
         /* Header */
         header {
-            background: var(--surface);
+            background: var(--card-bg);
             padding: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -40,964 +36,539 @@
 
         h1 { font-size: 1.5rem; color: var(--primary); font-weight: 800; }
         
-        .header-actions button {
+        .btn-icon {
             background: none;
             border: none;
-            font-size: 1.2rem;
-            margin-left: 10px;
+            font-size: 1.5rem;
             cursor: pointer;
             color: var(--text-light);
-            transition: color 0.2s;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background 0.2s;
         }
-        .header-actions button:hover { color: var(--primary); }
+        .btn-icon:hover { background: var(--bg); color: var(--primary); }
 
-        /* Contenedor Principal */
-        .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+        /* Container */
+        .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
 
-        /* Selector de Semana */
+        /* Week Selector */
         .week-nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
-            background: var(--surface);
+            margin-bottom: 1.5rem;
+            background: var(--card-bg);
             padding: 0.5rem;
-            border-radius: 8px;
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .week-nav button {
             background: var(--bg);
             border: none;
             padding: 0.5rem 1rem;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: bold;
+            color: var(--text);
         }
+        .current-week { font-weight: 600; color: var(--primary); }
 
-        /* Grid Semanal */
-        .weekly-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
+        /* Timeline Grid */
+        .timeline-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            overflow-x: auto;
         }
 
         .day-column {
-            background: var(--surface);
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            min-width: 140px;
+            margin-right: 1rem;
+            display: flex;
+            flex-direction: column;
         }
-
         .day-header {
-            font-weight: bold;
-            margin-bottom: 0.5rem;
             text-align: center;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: var(--bg);
+            border-radius: 8px;
             color: var(--primary);
-            border-bottom: 2px solid var(--bg);
-            padding-bottom: 0.5rem;
-        }
-
-        /* Línea de tiempo y Bloques */
-        .timeline {
-            position: relative;
-            min-height: 600px;
-            border-left: 2px solid var(--bg);
-            margin-left: 10px;
         }
 
         .time-slot {
             height: 60px;
-            border-bottom: 1px dashed #e5e7eb;
-            position: relative;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            padding-left: 10px;
+            justify-content: center;
             color: var(--text-light);
             font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .time-slot:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
         }
 
-        .block {
-            position: absolute;
-            left: 15px;
-            right: 10px;
+        .event-block {
             background: var(--primary);
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
             padding: 0.5rem;
+            margin-bottom: 0.5rem;
             font-size: 0.85rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             cursor: grab;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: relative;
             overflow: hidden;
-            z-index: 10;
-            transition: transform 0.2s;
         }
-        .block:active { cursor: grabbing; transform: scale(1.02); }
-        .block.fixed { background: var(--text-light); cursor: default; }
-        
-        .block-title { font-weight: bold; display: block; }
-        .block-time { font-size: 0.75rem; opacity: 0.9; }
+        .event-block:active { cursor: grabbing; }
+        .event-block .delete-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(255,255,255,0.3);
+            border: none;
+            color: white;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s;
+            z-index: 1000;
+        }
+        .fab:hover { transform: scale(1.1); }
+        .fab.playing { background: var(--danger); animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
 
         /* Modal */
         .modal-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5);
             display: none;
-            justify-content: center;
             align-items: center;
-            z-index: 1000;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
         }
+        .modal-overlay.active { display: flex; }
+        
         .modal {
-            background: var(--surface);
+            background: var(--card-bg);
             padding: 2rem;
-            border-radius: 12px;
+            border-radius: 16px;
             width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
-        .modal h2 { margin-bottom: 1rem; color: var(--primary); }
+        .modal h2 { margin-bottom: 1.5rem; color: var(--text); }
         
         .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-light); font-size: 0.9rem; }
         .form-group input, .form-group select {
             width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
         }
         
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
         .btn {
-            padding: 0.75rem 1.5rem;
+            flex: 1;
+            padding: 0.75rem;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            margin-top: 0.5rem;
+            transition: opacity 0.2s;
         }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
         .btn-secondary { background: var(--bg); color: var(--text); }
+        .btn:hover { opacity: 0.9; }
 
-        /* Botones Flotantes (FAB) */
-        .fab-container {
+        /* Timer Overlay */
+        .timer-overlay {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 900;
-        }
-        .fab {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s;
-        }
-        .fab:hover { transform: scale(1.1); }
-        .fab.secondary { background: var(--surface); color: var(--primary); border: 2px solid var(--primary); }
-
-        /* Modo Enfoque */
-        #focus-mode {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #111827;
-            color: white;
-            z-index: 2000;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
-        }
-        .timer-display { font-size: 6rem; font-weight: bold; margin: 2rem 0; font-variant-numeric: tabular-nums; }
-        .breathing-circle {
-            width: 200px; height: 200px;
-            border-radius: 50%;
-            background: rgba(79, 70, 229, 0.3);
-            animation: breathe 4s infinite ease-in-out;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-        }
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-
-        /* Configuración y Stats */
-        .settings-section { margin-bottom: 2rem; border-bottom: 1px solid var(--bg); padding-bottom: 1rem; }
-        .color-picker { display: flex; gap: 10px; align-items: center; }
-        .category-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-
-        /* Notificaciones Toast */
-        .toast {
-            position: fixed;
-            bottom: 90px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
+            z-index: 3000;
             color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            z-index: 1500;
         }
-        .toast.show { opacity: 1; }
+        .timer-overlay.active { display: flex; }
+        .timer-display { font-size: 6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .timer-task { font-size: 1.5rem; margin-bottom: 2rem; opacity: 0.9; }
+        .timer-controls { display: flex; gap: 1rem; }
+        .timer-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-stop { background: var(--danger); color: white; }
+        .btn-close-timer { background: transparent; border: 2px solid rgba(255,255,255,0.3); color: white; }
+
+        /* Categories Legend */
+        .categories-legend {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+        }
+        .cat-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+        .cat-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .timeline-container { display: flex; flex-direction: column; }
+            .day-column { min-width: 100%; margin-right: 0; margin-bottom: 1rem; }
+            .time-slot { height: 50px; }
+        }
     </style>
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
     <header>
-        <h1><i class="fas fa-clock"></i> TimeFlow</h1>
-        <div class="header-actions">
-            <button onclick="openModal('stats-modal')" title="Estadísticas"><i class="fas fa-chart-bar"></i></button>
-            <button onclick="openModal('settings-modal')" title="Configuración"><i class="fas fa-cog"></i></button>
-        </div>
+        <h1>TimeFlow</h1>
+        <button class="btn-icon" id="settingsBtn">⚙️</button>
     </header>
 
     <div class="container">
         <div class="week-nav">
-            <button onclick="changeWeek(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
-            <span id="current-week-label" style="font-weight: bold;"></span>
-            <button onclick="changeWeek(1)">Siguiente <i class="fas fa-chevron-right"></i></button>
+            <button id="prevWeek">←</button>
+            <span class="current-week" id="currentWeekLabel">Esta semana</span>
+            <button id="nextWeek">→</button>
         </div>
 
-        <div class="weekly-grid" id="weekly-grid">
-            <!-- Se genera dinámicamente -->
+        <div class="timeline-container" id="timeline">
+            <!-- JS generará esto -->
+        </div>
+
+        <div class="categories-legend" id="categoriesLegend">
+            <!-- Leyenda de categorías -->
         </div>
     </div>
 
-    <!-- Botones Flotantes -->
-    <div class="fab-container">
-        <button class="fab secondary" onclick="exportICS()" title="Exportar a Calendar"><i class="fas fa-calendar-export"></i></button>
-        <button class="fab" onclick="startFocusMode()" title="Modo Enfoque"><i class="fas fa-bullseye"></i></button>
-        <button class="fab" onclick="openAddBlockModal()" title="Agregar Actividad"><i class="fas fa-plus"></i></button>
-    </div>
+    <button class="fab" id="mainFab">▶️</button>
 
-    <!-- Modales -->
-    
-    <!-- Modal Agregar/Bloque -->
-    <div id="block-modal" class="modal-overlay">
+    <!-- Modal Nuevo Evento -->
+    <div class="modal-overlay" id="eventModal">
         <div class="modal">
-            <h2 id="block-modal-title">Nueva Actividad</h2>
-            <input type="hidden" id="edit-block-id">
+            <h2 id="modalTitle">Nuevo Bloque</h2>
             <div class="form-group">
-                <label>Título</label>
-                <input type="text" id="block-title" placeholder="Ej: Estudiar Matemáticas">
-            </div>
-            <div class="form-group">
-                <label>Día</label>
-                <select id="block-day">
-                    <option value="0">Lunes</option>
-                    <option value="1">Martes</option>
-                    <option value="2">Miércoles</option>
-                    <option value="3">Jueves</option>
-                    <option value="4">Viernes</option>
-                    <option value="5">Sábado</option>
-                    <option value="6">Domingo</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Hora Inicio</label>
-                <input type="time" id="block-start">
-            </div>
-            <div class="form-group">
-                <label>Duración (horas)</label>
-                <input type="number" id="block-duration" value="1" min="0.5" step="0.5">
+                <label>Tarea / Actividad</label>
+                <input type="text" id="taskInput" placeholder="Ej: Estudiar Matemáticas">
             </div>
             <div class="form-group">
                 <label>Categoría</label>
-                <select id="block-category"></select>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-primary" onclick="saveBlock()">Guardar</button>
-                <button class="btn btn-secondary" onclick="closeModal('block-modal')">Cancelar</button>
-                <button class="btn btn-danger" id="delete-block-btn" onclick="deleteBlock()" style="display:none;">Eliminar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Configuración -->
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal">
-            <h2>Configuración</h2>
-            
-            <div class="settings-section">
-                <h3>Categorías y Colores</h3>
-                <div id="categories-list"></div>
-                <button class="btn btn-secondary" onclick="addNewCategory()">+ Nueva Categoría</button>
-            </div>
-
-            <div class="settings-section">
-                <h3>Metas Semanales</h3>
-                <div id="goals-list"></div>
-            </div>
-
-            <div class="settings-section">
-                <h3>Sonidos Ambientales</h3>
-                <select id="ambient-sound" onchange="toggleSound(this.value)">
-                    <option value="">Silencio</option>
-                    <option value="rain">Lluvia 🌧️</option>
-                    <option value="cafe">Cafetería ☕</option>
-                    <option value="forest">Bosque 🌲</option>
-                    <option value="waves">Olas 🌊</option>
-                    <option value="white">Ruido Blanco ⚪</option>
+                <select id="categorySelect">
+                    <option value="work">💼 Trabajo</option>
+                    <option value="study">📚 Estudio</option>
+                    <option value="health">💪 Salud</option>
+                    <option value="rest">😴 Descanso</option>
+                    <option value="personal">🏠 Personal</option>
                 </select>
-                <input type="range" id="sound-volume" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume(this.value)">
             </div>
-
-            <div class="settings-section">
-                <h3>Backup de Datos</h3>
-                <button class="btn btn-primary" onclick="exportData()">📥 Exportar JSON</button>
-                <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📤 Importar JSON</button>
-                <input type="file" id="import-file" style="display:none" onchange="importData(this)" accept=".json">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveEvent()">Guardar</button>
             </div>
-
-            <button class="btn btn-secondary" onclick="closeModal('settings-modal')">Cerrar</button>
         </div>
     </div>
 
-    <!-- Modal Estadísticas -->
-    <div id="stats-modal" class="modal-overlay">
-        <div class="modal" style="max-width: 800px;">
-            <h2>Estadísticas Semanales</h2>
-            <canvas id="stats-chart"></canvas>
-            <div id="stats-details" style="margin-top: 20px;"></div>
-            <button class="btn btn-secondary" style="margin-top: 20px;" onclick="closeModal('stats-modal')">Cerrar</button>
+    <!-- Timer Overlay -->
+    <div class="timer-overlay" id="timerOverlay">
+        <div class="timer-task" id="timerTaskName">Enfoque</div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-controls">
+            <button class="timer-btn btn-stop" id="stopTimerBtn">Detener</button>
+            <button class="timer-btn btn-close-timer" id="closeTimerBtn">Salir</button>
         </div>
     </div>
-
-    <!-- Modo Enfoque -->
-    <div id="focus-mode">
-        <div class="breathing-circle">
-            <i class="fas fa-brain" style="font-size: 3rem;"></i>
-        </div>
-        <h2 id="focus-task-name" style="margin-top: 20px;">Enfoque Total</h2>
-        <div class="timer-display" id="focus-timer">05:00</div>
-        <button class="btn btn-danger" style="width: auto; padding: 10px 30px;" onclick="stopFocusMode()">Salir</button>
-    </div>
-
-    <div id="toast" class="toast">Notificación</div>
 
     <script>
         // --- ESTADO DE LA APP ---
         const state = {
-            currentWeekStart: getMonday(new Date()),
-            blocks: [],
-            categories: [
-                { id: 'work', name: 'Trabajo', color: '#4f46e5' },
-                { id: 'study', name: 'Estudio', color: '#10b981' },
-                { id: 'personal', name: 'Personal', color: '#f59e0b' },
-                { id: 'rest', name: 'Descanso', color: '#6b7280' }
-            ],
-            goals: {},
-            soundEnabled: false,
-            audioCtx: null,
-            oscillator: null,
-            gainNode: null
+            currentDate: new Date(),
+            events: JSON.parse(localStorage.getItem('tf_events')) || {},
+            categories: {
+                work: { name: 'Trabajo', color: '#3b82f6', icon: '💼' },
+                study: { name: 'Estudio', color: '#8b5cf6', icon: '📚' },
+                health: { name: 'Salud', color: '#10b981', icon: '💪' },
+                rest: { name: 'Descanso', color: '#f59e0b', icon: '😴' },
+                personal: { name: 'Personal', color: '#ec4899', icon: '🏠' }
+            },
+            timer: {
+                active: false,
+                timeLeft: 25 * 60,
+                interval: null,
+                task: ''
+            }
         };
 
         // --- INICIALIZACIÓN ---
         document.addEventListener('DOMContentLoaded', () => {
-            loadData();
-            requestNotificationPermission();
-            renderApp();
-            setupDragAndDrop();
+            renderTimeline();
+            renderLegend();
+            setupEventListeners();
             
-            // Recordatorio nocturno
-            setInterval(checkReminders, 60000); 
+            // Solicitar permiso de notificaciones
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
         });
 
-        function getMonday(d) {
-            d = new Date(d);
-            const day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        function setupEventListeners() {
+            document.getElementById('prevWeek').addEventListener('click', () => changeWeek(-1));
+            document.getElementById('nextWeek').addEventListener('click', () => changeWeek(1));
+            document.getElementById('mainFab').addEventListener('click', toggleTimer);
+            document.getElementById('settingsBtn').addEventListener('click', () => alert('Configuración básica: Los datos se guardan automáticamente en este navegador.'));
+            
+            document.getElementById('stopTimerBtn').addEventListener('click', stopTimer);
+            document.getElementById('closeTimerBtn').addEventListener('click', () => {
+                stopTimer();
+                document.getElementById('timerOverlay').classList.remove('active');
+            });
+        }
+
+        // --- LÓGICA DE CALENDARIO ---
+        function getStartOfWeek(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajustar para lunes
             return new Date(d.setDate(diff));
         }
 
-        function loadData() {
-            const saved = localStorage.getItem('timeflow_data');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                state.blocks = parsed.blocks || [];
-                state.categories = parsed.categories || state.categories;
-                state.goals = parsed.goals || {};
-            }
+        function changeWeek(offset) {
+            state.currentDate.setDate(state.currentDate.getDate() + (offset * 7));
+            renderTimeline();
         }
 
-        function saveData() {
-            localStorage.setItem('timeflow_data', JSON.stringify({
-                blocks: state.blocks,
-                categories: state.categories,
-                goals: state.goals
-            }));
-            renderApp();
-        }
-
-        // --- RENDERIZADO ---
-        function renderApp() {
-            renderHeaderDate();
-            renderGrid();
-            renderSettings();
-        }
-
-        function renderHeaderDate() {
-            const endOfWeek = new Date(state.currentWeekStart);
+        function renderTimeline() {
+            const container = document.getElementById('timeline');
+            container.innerHTML = '';
+            
+            const startOfWeek = getStartOfWeek(state.currentDate);
+            const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            
+            // Actualizar etiqueta
+            const endOfWeek = new Date(startOfWeek);
             endOfWeek.setDate(endOfWeek.getDate() + 6);
-            const options = { month: 'short', day: 'numeric' };
-            document.getElementById('current-week-label').textContent = 
-                `${state.currentWeekStart.toLocaleDateString('es-ES', options)} - ${endOfWeek.toLocaleDateString('es-ES', options)}`;
-        }
-
-        function renderGrid() {
-            const grid = document.getElementById('weekly-grid');
-            grid.innerHTML = '';
-            const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+            document.getElementById('currentWeekLabel').textContent = 
+                `${startOfWeek.getDate()}/${startOfWeek.getMonth()+1} - ${endOfWeek.getDate()}/${endOfWeek.getMonth()+1}`;
 
             for (let i = 0; i < 7; i++) {
-                const date = new Date(state.currentWeekStart);
-                date.setDate(date.getDate() + i);
+                const currentDay = new Date(startOfWeek);
+                currentDay.setDate(currentDay.getDate() + i);
+                const dateKey = currentDay.toISOString().split('T')[0];
                 
                 const col = document.createElement('div');
                 col.className = 'day-column';
                 
-                let html = `<div class="day-header">${days[i]} <small>${date.getDate()}</small></div>`;
-                html += `<div class="timeline" id="day-${i}" data-day="${i}">`;
-                
-                // Slots de tiempo (visual)
-                for(let h=6; h<=22; h++) {
-                    html += `<div class="time-slot" style="height: 60px;">${h}:00</div>`;
-                }
-                html += `</div>`;
-                
-                col.innerHTML = html;
-                grid.appendChild(col);
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                header.textContent = `${days[i]} ${currentDay.getDate()}`;
+                col.appendChild(header);
 
-                // Renderizar bloques
-                const dayBlocks = state.blocks.filter(b => {
-                    const bDate = new Date(b.date);
-                    return bDate.getTime() === date.setHours(0,0,0,0);
-                });
-
-                dayBlocks.forEach(block => {
-                    const el = document.createElement('div');
-                    el.className = 'block';
-                    el.draggable = true;
-                    el.id = block.id;
-                    el.style.top = `${(block.startHour - 6) * 60}px`;
-                    el.style.height = `${block.duration * 60}px`;
+                // Slots de tiempo (8 AM a 8 PM)
+                for (let hour = 8; hour <= 20; hour++) {
+                    const slotKey = `${dateKey}-${hour}`;
+                    const event = state.events[slotKey];
                     
-                    const cat = state.categories.find(c => c.id === block.categoryId) || state.categories[0];
-                    el.style.backgroundColor = cat.color;
-                    
-                    el.innerHTML = `
-                        <span class="block-title">${block.title}</span>
-                        <span class="block-time">${formatTime(block.startHour)} - ${formatTime(block.startHour + block.duration)}</span>
-                    `;
-                    
-                    el.onclick = (e) => { e.stopPropagation(); editBlock(block.id); };
-                    el.ondragstart = (e) => {
-                        e.dataTransfer.setData("text/plain", block.id);
-                        e.dataTransfer.effectAllowed = "move";
-                    };
-                    
-                    document.getElementById(`day-${i}`).appendChild(el);
-                });
-            }
-        }
-
-        function formatTime(decimalTime) {
-            const hrs = Math.floor(decimalTime);
-            const min = Math.round((decimalTime - hrs) * 60);
-            return `${hrs.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
-        }
-
-        // --- LÓGICA DE BLOQUES ---
-        function openAddBlockModal() {
-            document.getElementById('block-modal-title').textContent = "Nueva Actividad";
-            document.getElementById('edit-block-id').value = "";
-            document.getElementById('block-title').value = "";
-            document.getElementById('delete-block-btn').style.display = "none";
-            
-            // Default values
-            const now = new Date();
-            document.getElementById('block-day').value = now.getDay() === 0 ? 6 : now.getDay() - 1;
-            document.getElementById('block-start').value = `${now.getHours().toString().padStart(2,'0')}:00`;
-            
-            populateCategories();
-            openModal('block-modal');
-        }
-
-        function editBlock(id) {
-            const block = state.blocks.find(b => b.id === id);
-            if (!block) return;
-
-            document.getElementById('block-modal-title').textContent = "Editar Actividad";
-            document.getElementById('edit-block-id').value = block.id;
-            document.getElementById('block-title').value = block.title;
-            
-            const date = new Date(block.date);
-            document.getElementById('block-day').value = date.getDay() === 0 ? 6 : date.getDay() - 1;
-            
-            document.getElementById('block-start').value = formatTime(block.startHour);
-            document.getElementById('block-duration').value = block.duration;
-            document.getElementById('block-category').value = block.categoryId;
-            
-            document.getElementById('delete-block-btn').style.display = "block";
-            
-            populateCategories();
-            openModal('block-modal');
-        }
-
-        function populateCategories() {
-            const select = document.getElementById('block-category');
-            select.innerHTML = '';
-            state.categories.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat.id;
-                opt.textContent = cat.name;
-                select.appendChild(opt);
-            });
-        }
-
-        function saveBlock() {
-            const id = document.getElementById('edit-block-id').value;
-            const title = document.getElementById('block-title').value;
-            const dayIndex = parseInt(document.getElementById('block-day').value);
-            const timeStr = document.getElementById('block-start').value;
-            const duration = parseFloat(document.getElementById('block-duration').value);
-            const categoryId = document.getElementById('block-category').value;
-
-            if (!title || !timeStr) return showToast("Completa los campos");
-
-            const [h, m] = timeStr.split(':').map(Number);
-            const startHour = h + (m / 60);
-
-            const date = new Date(state.currentWeekStart);
-            date.setDate(date.getDate() + dayIndex);
-
-            if (id) {
-                // Editar
-                const block = state.blocks.find(b => b.id === id);
-                if (block) {
-                    block.title = title;
-                    block.date = date.toISOString();
-                    block.startHour = startHour;
-                    block.duration = duration;
-                    block.categoryId = categoryId;
-                }
-            } else {
-                // Nuevo
-                state.blocks.push({
-                    id: Date.now().toString(),
-                    title,
-                    date: date.toISOString(),
-                    startHour,
-                    duration,
-                    categoryId,
-                    notified: false
-                });
-            }
-
-            saveData();
-            closeModal('block-modal');
-            showToast("Actividad guardada");
-        }
-
-        function deleteBlock() {
-            const id = document.getElementById('edit-block-id').value;
-            if (id) {
-                state.blocks = state.blocks.filter(b => b.id !== id);
-                saveData();
-                closeModal('block-modal');
-                showToast("Actividad eliminada");
-            }
-        }
-
-        // --- DRAG AND DROP ---
-        function setupDragAndDrop() {
-            // Delegación de eventos para zonas de soltar
-            document.addEventListener('dragover', (e) => {
-                if (e.target.classList.contains('timeline')) {
-                    e.preventDefault();
-                }
-            });
-
-            document.addEventListener('drop', (e) => {
-                if (e.target.classList.contains('timeline') || e.target.classList.contains('time-slot')) {
-                    e.preventDefault();
-                    const id = e.dataTransfer.getData("text/plain");
-                    const timeline = e.target.closest('.timeline');
-                    const dayIndex = parseInt(timeline.dataset.day);
-                    
-                    // Calcular hora basada en posición Y
-                    const rect = timeline.getBoundingClientRect();
-                    const offsetY = e.clientY - rect.top;
-                    const slotHeight = 60; // px por hora
-                    const newStartHour = 6 + (offsetY / slotHeight);
-
-                    const block = state.blocks.find(b => b.id === id);
-                    if (block) {
-                        const newDate = new Date(state.currentWeekStart);
-                        newDate.setDate(newDate.getDate() + dayIndex);
+                    if (event) {
+                        const block = document.createElement('div');
+                        block.className = 'event-block';
+                        block.style.backgroundColor = state.categories[event.category].color;
+                        block.draggable = true;
+                        block.innerHTML = `
+                            <strong>${event.title}</strong>
+                            <button class="delete-btn" onclick="deleteEvent('${slotKey}', event)">×</button>
+                        `;
+                        // Drag events
+                        block.addEventListener('dragstart', (e) => {
+                            e.dataTransfer.setData('text/plain', slotKey);
+                            e.dataTransfer.effectAllowed = 'move';
+                        });
+                        col.appendChild(block);
+                    } else {
+                        const slot = document.createElement('div');
+                        slot.className = 'time-slot';
+                        slot.textContent = `${hour}:00`;
+                        slot.onclick = () => openModal(slotKey);
                         
-                        block.date = newDate.toISOString();
-                        block.startHour = Math.max(6, Math.min(22, newStartHour)); // Limites
+                        // Drop events
+                        slot.addEventListener('dragover', (e) => e.preventDefault());
+                        slot.addEventListener('drop', (e) => handleDrop(e, slotKey));
                         
-                        saveData();
-                        showToast("Bloque movido");
+                        col.appendChild(slot);
                     }
                 }
-            });
-        }
-
-        // --- CONFIGURACIÓN Y CATEGORÍAS ---
-        function renderSettings() {
-            const list = document.getElementById('categories-list');
-            list.innerHTML = '';
-            state.categories.forEach(cat => {
-                const div = document.createElement('div');
-                div.className = 'category-item';
-                div.innerHTML = `
-                    <span>${cat.name}</span>
-                    <div class="color-picker">
-                        <input type="color" value="${cat.color}" onchange="updateCategoryColor('${cat.id}', this.value)">
-                        <button class="btn btn-danger" style="width:auto; padding: 5px 10px; font-size:0.8rem;" onclick="removeCategory('${cat.id}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-
-            // Metas
-            const goalsList = document.getElementById('goals-list');
-            goalsList.innerHTML = '';
-            state.categories.forEach(cat => {
-                const currentGoal = state.goals[cat.id] || 0;
-                const div = document.createElement('div');
-                div.className = 'form-group';
-                div.innerHTML = `
-                    <label>${cat.name} (horas/semana)</label>
-                    <input type="number" value="${currentGoal}" onchange="updateGoal('${cat.id}', this.value)">
-                `;
-                goalsList.appendChild(div);
-            });
-        }
-
-        function updateCategoryColor(id, color) {
-            const cat = state.categories.find(c => c.id === id);
-            if (cat) {
-                cat.color = color;
-                saveData();
+                container.appendChild(col);
             }
         }
 
-        function addNewCategory() {
-            const name = prompt("Nombre de la nueva categoría:");
-            if (name) {
-                state.categories.push({
-                    id: 'cat_' + Date.now(),
-                    name: name,
-                    color: '#' + Math.floor(Math.random()*16777215).toString(16)
-                });
-                saveData();
+        function renderLegend() {
+            const container = document.getElementById('categoriesLegend');
+            container.innerHTML = '';
+            Object.entries(state.categories).forEach(([key, cat]) => {
+                const item = document.createElement('div');
+                item.className = 'cat-item';
+                item.innerHTML = `<span class="cat-dot" style="background:${cat.color}"></span>${cat.icon} ${cat.name}`;
+                container.appendChild(item);
+            });
+        }
+
+        // --- GESTIÓN DE EVENTOS ---
+        let currentSlotKey = null;
+
+        function openModal(slotKey) {
+            currentSlotKey = slotKey;
+            document.getElementById('eventModal').classList.add('active');
+            document.getElementById('taskInput').value = '';
+            document.getElementById('taskInput').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('eventModal').classList.remove('active');
+            currentSlotKey = null;
+        }
+
+        function saveEvent() {
+            const title = document.getElementById('taskInput').value;
+            const category = document.getElementById('categorySelect').value;
+            
+            if (title && currentSlotKey) {
+                state.events[currentSlotKey] = { title, category };
+                localStorage.setItem('tf_events', JSON.stringify(state.events));
+                renderTimeline();
+                closeModal();
             }
         }
 
-        function removeCategory(id) {
-            if(confirm("¿Eliminar categoría? Los bloques asociados perderán su color.")) {
-                state.categories = state.categories.filter(c => c.id !== id);
-                saveData();
+        function deleteEvent(key, event) {
+            event.stopPropagation();
+            if(confirm('¿Borrar este bloque?')) {
+                delete state.events[key];
+                localStorage.setItem('tf_events', JSON.stringify(state.events));
+                renderTimeline();
             }
         }
 
-        function updateGoal(catId, value) {
-            state.goals[catId] = parseFloat(value);
-            saveData();
+        function handleDrop(e, targetKey) {
+            e.preventDefault();
+            const sourceKey = e.dataTransfer.getData('text/plain');
+            
+            if (sourceKey !== targetKey && !state.events[targetKey]) {
+                // Mover evento
+                state.events[targetKey] = state.events[sourceKey];
+                delete state.events[sourceKey];
+                localStorage.setItem('tf_events', JSON.stringify(state.events));
+                renderTimeline();
+            }
         }
 
-        // --- ESTADÍSTICAS ---
-        let statsChartInstance = null;
-
-        function openStats() {
-            const ctx = document.getElementById('stats-chart').getContext('2d');
+        // --- TIMER & ENFOQUE ---
+        function toggleTimer() {
+            const fab = document.getElementById('mainFab');
             
-            // Calcular datos
-            const totals = {};
-            state.categories.forEach(c => totals[c.id] = 0);
-            
-            state.blocks.forEach(b => {
-                if (totals[b.categoryId] !== undefined) {
-                    totals[b.categoryId] += b.duration;
-                }
-            });
-
-            const labels = state.categories.map(c => c.name);
-            const data = state.categories.map(c => totals[c.id] || 0);
-            const colors = state.categories.map(c => c.color);
-
-            if (statsChartInstance) statsChartInstance.destroy();
-
-            statsChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Horas dedicadas',
-                        data: data,
-                        backgroundColor: colors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
-
-            // Detalles texto
-            const details = document.getElementById('stats-details');
-            details.innerHTML = '<h3>Progreso de Metas</h3><ul>';
-            state.categories.forEach(c => {
-                const achieved = totals[c.id] || 0;
-                const goal = state.goals[c.id] || 0;
-                const percent = goal > 0 ? Math.round((achieved / goal) * 100) : 0;
-                details.innerHTML += `<li>${c.name}: ${achieved}h / ${goal}h (${percent}%)</li>`;
-            });
-            details.innerHTML += '</ul>';
-
-            openModal('stats-modal');
+            if (state.timer.active) {
+                stopTimer();
+                fab.classList.remove('playing');
+                fab.textContent = '▶️';
+            } else {
+                // Buscar tarea actual
+                const now = new Date();
+                const dateKey = now.toISOString().split('T')[0];
+                const hour = now.getHours();
+                const currentEvent = state.events[`${dateKey}-${hour}`];
+                
+                state.timer.task = currentEvent ? currentEvent.title : 'Tiempo de Enfoque';
+                state.timer.active = true;
+                state.timer.timeLeft = 25 * 60;
+                
+                document.getElementById('timerTaskName').textContent = state.timer.task;
+                document.getElementById('timerOverlay').classList.add('active');
+                fab.classList.add('playing');
+                fab.textContent = '⏹️';
+                
+                startTimerCountdown();
+            }
         }
 
-        // --- MODO ENFOQUE & SONIDOS ---
-        let focusTimerInterval;
-        let audioContext = null;
-        let noiseSource = null;
-
-        function startFocusMode() {
-            const activeBlock = getActiveBlock();
-            const taskName = activeBlock ? activeBlock.title : "Tiempo de Enfoque";
-            
-            document.getElementById('focus-task-name').textContent = taskName;
-            document.getElementById('focus-mode').style.display = 'flex';
-            
-            // Iniciar sonido si está seleccionado
-            const soundType = document.getElementById('ambient-sound').value;
-            if (soundType) playAmbientSound(soundType);
-
-            let timeLeft = 5 * 60; // 5 minutos
-            const timerEl = document.getElementById('focus-timer');
-            
-            clearInterval(focusTimerInterval);
-            focusTimerInterval = setInterval(() => {
-                timeLeft--;
-                const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
-                const s = (timeLeft % 60).toString().padStart(2,'0');
-                timerEl.textContent = `${m}:${s}`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(focusTimerInterval);
-                    stopAmbientSound();
-                    alert("¡Tiempo terminado!");
-                    stopFocusMode();
+        function startTimerCountdown() {
+            updateTimerDisplay();
+            state.timer.interval = setInterval(() => {
+                state.timer.timeLeft--;
+                updateTimerDisplay();
+                
+                if (state.timer.timeLeft <= 0) {
+                    stopTimer();
+                    alert('¡Tiempo terminado! Tómate un descanso.');
+                    document.getElementById('timerOverlay').classList.remove('active');
                 }
             }, 1000);
         }
 
-        function stopFocusMode() {
-            document.getElementById('focus-mode').style.display = 'none';
-            clearInterval(focusTimerInterval);
-            stopAmbientSound();
+        function updateTimerDisplay() {
+            const m = Math.floor(state.timer.timeLeft / 60);
+            const s = state.timer.timeLeft % 60;
+            document.getElementById('timerDisplay').textContent = 
+                `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
-        function getActiveBlock() {
-            // Lógica simple para encontrar bloque actual
-            const now = new Date();
-            const currentDay = now.getDay() === 0 ? 6 : now.getDay() - 1;
-            const currentHour = now.getHours() + now.getMinutes()/60;
-            
-            return state.blocks.find(b => {
-                const bDate = new Date(b.date);
-                const bDay = bDate.getDay() === 0 ? 6 : bDate.getDay() - 1;
-                return bDay === currentDay && currentHour >= b.startHour && currentHour < (b.startHour + b.duration);
-            });
-        }
-
-        // Generador de ruido simple con Web Audio API
-        function playAmbientSound(type) {
-            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            if (noiseSource) noiseSource.stop();
-
-            const bufferSize = 2 * audioContext.sampleRate;
-            const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-            const output = buffer.getChannelData(0);
-
-            for (let i = 0; i < bufferSize; i++) {
-                const white = Math.random() * 2 - 1;
-                output[i] = (lastOut + (0.02 * white)) / 1.02; // Filtro simple
-                lastOut = output[i];
-                output[i] *= 3.5; 
-            }
-
-            noiseSource = audioContext.createBufferSource();
-            noiseSource.buffer = buffer;
-            noiseSource.loop = true;
-            
-            const gain = audioContext.createGain();
-            gain.gain.value = document.getElementById('sound-volume').value;
-            
-            noiseSource.connect(gain);
-            gain.connect(audioContext.destination);
-            noiseSource.start();
-        }
-        let lastOut = 0;
-
-        function stopAmbientSound() {
-            if (noiseSource) {
-                noiseSource.stop();
-                noiseSource = null;
-            }
-        }
-
-        function toggleSound(val) {
-            if (val) playAmbientSound(val);
-            else stopAmbientSound();
-        }
-
-        function updateVolume(val) {
-            // Actualizar volumen en tiempo real requeriría mantener referencia al nodo Gain
-            // Simplificado: reiniciar sonido con nuevo volumen si está activo
-            const current = document.getElementById('ambient-sound').value;
-            if(current) {
-                stopAmbientSound();
-                playAmbientSound(current);
-            }
-        }
-
-        // --- UTILIDADES ---
-        function changeWeek(offset) {
-            state.currentWeekStart.setDate(state.currentWeekStart.getDate() + (offset * 7));
-            renderApp();
-        }
-
-        function openModal(id) {
-            document.getElementById(id).style.display = 'flex';
-            if(id === 'stats-modal') openStats();
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
-
-        // --- EXPORTAR / IMPORTAR ---
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-                blocks: state.blocks,
-                categories: state.categories,
-                goals: state.goals
-            }));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "timeflow_backup.json");
-            dlAnchorElem.click();
-        }
-
-        function importData(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    state.blocks = data.blocks || [];
-                    state.categories = data.categories || state.categories;
-                    state.goals = data.goals || {};
-                    saveData();
-                    showToast("Datos importados correctamente");
-                    closeModal('settings-modal');
-                } catch(err) {
-                    alert("Error al leer el archivo");
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function exportICS() {
-            let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//TimeFlow//ES\n";
-            
-            state.blocks.forEach(block => {
-                const startDate = new Date(block.date);
-                startDate.setHours(Math.floor(block.startHour), (block.startHour % 1) * 60);
-                const endDate = new Date(startDate);
-                endDate.setHours(startDate.getHours() + block.duration);
-
-                icsContent += "BEGIN:VEVENT\n";
-                icsContent += `DTSTART:${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z\n`;
-                icsContent += `DTEND:${endDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z\n`;
-                icsContent += `SUMMARY:${block.title}\n`;
-                icsContent += "END:VEVENT\n";
-            });
-
-            icsContent += "END:VCALENDAR";
-            
-            const blob = new Blob([icsContent], { type: 'text/calendar' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'timeflow_semana.ics';
-            a.click();
-        }
-
-        // --- NOTIFICACIONES ---
-        function requestNotificationPermission() {
-            if ("Notification" in window && Notification.permission === "default") {
-                Notification.requestPermission();
-            }
-        }
-
-        function checkReminders() {
-            if (Notification.permission !== "granted") return;
-            
-            const now = new Date();
-            const currentDay = now.getDay() === 0 ? 6 : now.getDay() - 1;
-            const currentHour = now.getHours() + now.getMinutes()/60;
-
-            state.blocks.forEach(block => {
-                if (block.notified) return;
-                
-                const bDate = new Date(block.date);
-                const bDay = bDate.getDay() === 0 ? 6 : bDate.getDay() - 1;
-                
-                if (bDay === currentDay) {
-                    // Notificar 30 min antes (0.5h)
-                    if (Math.abs((block.startHour - 0.5) - currentHour) < 0.1) {
-                        new Notification("TimeFlow", {
-                            body: `Próximamente: ${block.title}`,
-                            icon: "https://via.placeholder.com/50"
-                        });
-                        block.notified = true;
-                        saveData();
-                    }
-                }
-            });
+        function stopTimer() {
+            clearInterval(state.timer.interval);
+            state.timer.active = false;
         }
     </script>
 </body>
